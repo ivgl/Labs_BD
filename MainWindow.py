@@ -4,6 +4,7 @@ from MainMenu import MainMenu
 import Product
 import Supplier
 import Order
+import Accounting
 
 
 class MainWindow(QMainWindow):
@@ -17,6 +18,7 @@ class MainWindow(QMainWindow):
         main_menu.product_mode_request.connect(self.product_mode_on)
         main_menu.supplier_mode_request.connect(self.supplier_mode_on)
         main_menu.order_mode_request.connect(self.order_mode_on)
+        main_menu.accounting_mode_request.connect(self.accounting_mode_on)
 
     @pyqtSlot()
     def product_mode_on(self):
@@ -42,5 +44,14 @@ class MainWindow(QMainWindow):
         ov = Order.View(parent=self)
         self.setCentralWidget(ov)
         self.menuBar().setMode_Order(ov)
+        if old is not None:
+            old.deleteLater()
+
+    @pyqtSlot()
+    def accounting_mode_on(self):
+        old = self.centralWidget()
+        av = Accounting.View(parent=self)
+        self.setCentralWidget(av)
+        self.menuBar().setMode_Accounting(av)
         if old is not None:
             old.deleteLater()

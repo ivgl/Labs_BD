@@ -9,21 +9,18 @@ from operator import itemgetter
 
 
 INSERT = '''
-    INSERT INTO products ("Name") VALUES (%s);
-    INSERT INTO price ("ProductID", "Price") VALUES ((SELECT "ID" FROM products ORDER BY "ID" DESC LIMIT 1), (%s));
-    INSERT INTO return_possibility ("ProductID", "ReturnPossibility") VALUES ((SELECT "ID" FROM products ORDER BY "ID" DESC LIMIT 1), (%s));
-    INSERT INTO storage_supplies ("ProductID", "Amount") VALUES ((SELECT "ID" FROM products ORDER BY "ID" DESC LIMIT 1), (%s));
-    INSERT INTO products_suppliers ("SupplierID", "ProductID", "Price", "DiscountMinAmount", "DiscountPercentage") VALUES ((SELECT "ID" FROM suppliers WHERE "Name" = %s), (SELECT "ID" FROM products ORDER BY "ID" DESC LIMIT 1), (%s), (%s), (%s));
+    INSERT INTO products ("Name", "ProductPrice", "ReturnPossibility", "StorageAmount") VALUES ((%s), (%s), (%s), (%s));
+    INSERT INTO products_suppliers ("SupplierID", "ProductID", "SupplierPrice", "DiscountMinAmount", "DiscountPercentage") VALUES ((SELECT "ID" FROM suppliers WHERE "Name" = %s), (SELECT "ID" FROM products ORDER BY "ID" DESC LIMIT 1), (%s), (%s), (%s));
 '''
 
 SELECT_ONE = 'SELECT "Name" FROM products WHERE "ID" = %s;'
 
-UPDATE = 'UPDATE products SET "Name" = %s WHERE "ID" = %s'
+UPDATE = '''
+    UPDATE products SET "Name" = %s WHERE "ID" = %s
+    UPDATE products SET "ProductPrice" = %s WHERE "ID" = %s
+'''
 
 DELETE = '''
-    DELETE FROM price WHERE "ProductID" = %s;
-    DELETE FROM return_possibility WHERE "ProductID" = %s;
-    DELETE FROM storage_supplies WHERE "ProductID"= %s;
     DELETE FROM products_suppliers WHERE "ProductID" = %s;
     DELETE FROM "orderItems" WHERE "ProductID" = %s;
     DELETE FROM products WHERE "ID" = %s;
@@ -37,7 +34,7 @@ class Model(QSqlQueryModel):
 
     def updateTable(self):
         sql = '''
-            SELECT "ID", "Name" FROM products ORDER BY "ID" DESC;
+            SELECT * FROM products ORDER BY "ID" DESC;
         '''
         self.setQuery(sql)
 
@@ -50,10 +47,10 @@ class Model(QSqlQueryModel):
         conn.close()
         self.updateTable()
 
-    def update(self, productID, name):
+    def update(self, productID, name, customerprice):
         conn = psycopg2.connect(**st.db_params)
         cursor = conn.cursor()
-        cursor.execute(UPDATE, (name, productID))
+        cursor.execute(UPDATE, (name, productID, customerprice, productID))
         conn.commit()
         conn.close()
         self.updateTable()
@@ -61,8 +58,7 @@ class Model(QSqlQueryModel):
     def delete(self, productID):
         conn = psycopg2.connect(**st.db_params)
         cursor = conn.cursor()
-        cursor.execute(DELETE, (productID, productID, productID,
-                       productID, productID, productID))
+        cursor.execute(DELETE, (productID, productID, productID))
         conn.commit()
         conn.close()
         self.updateTable()
@@ -80,8 +76,9 @@ class View(QTableView):
     def add(self):
         dialog = Dialog(parent=self)
         if dialog.exec():
-            self.model().add(dialog.name, dialog.customerprice, dialog.returnpossibility,
-                             dialog.storageamount, dialog.supplier, dialog.supplierprice, dialog.discountamount, dialog.discountpercentage)
+            if dialog.is_product_new(dialog.name):
+                self.model().add(dialog.name, dialog.customerprice, dialog.returnpossibility,
+                                 dialog.storageamount, dialog.supplier, dialog.supplierprice, dialog.discountamount, dialog.discountpercentage)
 
     @pyqtSlot()
     def update(self):
@@ -95,7 +92,7 @@ class View(QTableView):
         dialog.name = dialog.name.strip()
         conn.close()
         if dialog.exec():
-            self.model().update(productID, dialog.name)
+            self.model().update(productID, dialog.name, dialog.customerprice)
 
     @pyqtSlot()
     def delete(self):
@@ -179,13 +176,28 @@ class Dialog(QDialog):
         conn.close()
         return ListS
 
-    @ pyqtSlot()
+    def is_product_new(self, name):
+        conn = psycopg2.connect(**st.db_params)
+        q = conn.cursor()
+        q.execute('SELECT DISTINCT "Name" FROM products')
+        ListS = q.fetchall()
+        ListS = list(map(itemgetter(0), ListS))
+        ListS = list(map(str, ListS))
+        ListS = list(map(str.strip, ListS))
+        conn.commit()
+        conn.close()
+        if name in ListS:
+            return False
+        else:
+            return True
+
+    @pyqtSlot()
     def finish(self):
         if self.name is None:
             return
         self.accept()
 
-    @ property
+    @property
     def name(self):
         result = self.__name_edit.text().strip()
         if result == '':
@@ -193,34 +205,34 @@ class Dialog(QDialog):
         else:
             return result
 
-    @ property
+    @property
     def customerprice(self):
         return str(self.__customerprice_edit.text()).strip()
 
-    @ property
+    @property
     def returnpossibility(self):
         return str(self.__returnpossibility_edit.text()).strip()
 
-    @ property
+    @property
     def storageamount(self):
         return str(self.__storageamount_edit.text()).strip()
 
-    @ property
+    @property
     def supplier(self):
         return str(self.__supplier_choose.currentText()).strip()
 
-    @ property
+    @property
     def supplierprice(self):
         return str(self.__customerprice_edit.text()).strip()
 
-    @ property
+    @property
     def discountamount(self):
         return str(self.__discountamount_edit.text()).strip()
 
-    @ property
+    @property
     def discountpercentage(self):
         return str(self.__discountpercentage_edit.text()).strip()
 
-    @ name.setter
+    @name.setter
     def name(self, value):
         self.__name_edit.setText(value)

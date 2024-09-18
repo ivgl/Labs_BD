@@ -8,8 +8,7 @@ import psycopg2
 from operator import itemgetter
 
 INSERTORDERS = '''
-INSERT INTO orders ("TotalPrice", "Dates", "OperationTypeID") VALUES ((%s), (%s), (SELECT "ID" FROM operation_types WHERE "Name" = %s));
-INSERT INTO financials ("Balance","OrderID") VALUES ((SELECT "Balance" FROM financials ORDER BY "ID" DESC LIMIT 1), (SELECT "ID" FROM orders ORDER BY "ID" DESC LIMIT 1))
+INSERT INTO orders ("TotalPrice", "Dates", "OperationType") VALUES ((%s), (%s), (%s));
 '''
 
 INSERTITEMS = '''
@@ -78,8 +77,7 @@ class Dialog(QDialog):
         self.__dates_edit = QLineEdit(parent=self)
 
         operationtype_label = QLabel('Operation type', parent=self)
-        self.__operationtype_choose = QComboBox(parent=self)
-        self.__operationtype_choose.addItems(self.get_operationtype_list())
+        self.__operationtype_edit = QLineEdit(parent=self)
 
         numberof_label = QLabel('Number of', parent=self)
         self.__numberof_edit = QLineEdit(parent=self)
@@ -93,7 +91,7 @@ class Dialog(QDialog):
         layout.addWidget(dates_label)
         layout.addWidget(self.__dates_edit)
         layout.addWidget(operationtype_label)
-        layout.addWidget(self.__operationtype_choose)
+        layout.addWidget(self.__operationtype_edit)
         layout.addWidget(numberof_label)
         layout.addWidget(self.__numberof_edit)
 
@@ -105,18 +103,6 @@ class Dialog(QDialog):
 
         cancel_button.clicked.connect(self.reject)
         ok_button.clicked.connect(self.finish)
-
-    def get_operationtype_list(self):
-        conn = psycopg2.connect(**st.db_params)
-        q = conn.cursor()
-        q.execute('SELECT DISTINCT "Name" FROM operation_types')
-        ListS = q.fetchall()
-        ListS = list(map(itemgetter(0), ListS))
-        ListS = list(map(str, ListS))
-        ListS = list(map(str.strip, ListS))
-        conn.commit()
-        conn.close()
-        return ListS
 
     @pyqtSlot()
     def finish(self):
@@ -142,7 +128,7 @@ class Dialog(QDialog):
 
     @property
     def operationtype(self):
-        return str(self.__operationtype_choose.currentText()).strip()
+        return str(self.__operationtype_edit.text()).strip()
 
     @totalprice.setter
     def totalprice(self, value):

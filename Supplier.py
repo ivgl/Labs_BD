@@ -8,8 +8,6 @@ import psycopg2
 from operator import itemgetter
 
 
-SELECT_SUBJECT = 'SELECT ID, Name FROM subjects;'
-
 INSERT = 'INSERT INTO suppliers ("Name") VALUES (%s);'
 
 SELECT_ONE = 'SELECT "Name" FROM suppliers WHERE "ID" = %s;'
@@ -70,7 +68,8 @@ class View(QTableView):
     def add(self):
         dialog = Dialog(parent=self)
         if dialog.exec():
-            self.model().add(dialog.name)
+            if dialog.is_supplier_new(dialog.name):
+                self.model().add(dialog.name)
 
     @pyqtSlot()
     def update(self):
@@ -122,10 +121,7 @@ class Dialog(QDialog):
     def is_supplier_new(self, name):
         conn = psycopg2.connect(**st.db_params)
         q = conn.cursor()
-        q.execute('''
-                  SELECT DISTINCT Name FROM suppliers 
-                  Where Name = \'%s\'
-                ''' % name)
+        q.execute('SELECT DISTINCT "Name" FROM suppliers')
         ListS = q.fetchall()
         ListS = list(map(itemgetter(0), ListS))
         ListS = list(map(str, ListS))

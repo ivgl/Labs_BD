@@ -7,6 +7,7 @@ class MainMenu(QMenuBar):
     product_mode_request = pyqtSignal()
     supplier_mode_request = pyqtSignal()
     order_mode_request = pyqtSignal()
+    accounting_mode_request = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -24,6 +25,11 @@ class MainMenu(QMenuBar):
         orders_menu = self.addMenu("Orders")
         self.addO = orders_menu.addAction('Add order')
 
+        accounting_menu = self.addMenu("Accounting")
+        self.storageS = accounting_menu.addAction('Storage status')
+        self.ordersP = accounting_menu.addAction('Orders period')
+        self.financialsP = accounting_menu.addAction('Financials period')
+
         mode_menu = menu = self.addMenu("Mode")
         mode_action_group = ag = QActionGroup(self)
         self.product_mode_action = act = mode_menu.addAction("Product")
@@ -37,6 +43,10 @@ class MainMenu(QMenuBar):
         self.order_mode_action = act = mode_menu.addAction("Order")
         act.setCheckable(True)
         act.toggled.connect(self.toggle_order_mode)
+        ag.addAction(act)
+        self.accounting_mode_action = act = mode_menu.addAction("Accounting")
+        act.setCheckable(True)
+        act.toggled.connect(self.toggle_accounting_mode)
         ag.addAction(act)
 
     def setMode_Product(self, widget):
@@ -52,6 +62,11 @@ class MainMenu(QMenuBar):
     def setMode_Order(self, widget):
         self.addO.triggered.connect(widget.add)
 
+    def setMode_Accounting(self, widget):
+        self.storageS.triggered.connect(widget.storage_status)
+        self.ordersP.triggered.connect(widget.orders_period)
+        self.financialsP.triggered.connect(widget.financials_period)
+
     @pyqtSlot(bool)
     def toggle_product_mode(self, enabled):
         if enabled:
@@ -66,3 +81,8 @@ class MainMenu(QMenuBar):
     def toggle_order_mode(self, enabled):
         if enabled:
             self.order_mode_request.emit()
+
+    @pyqtSlot(bool)
+    def toggle_accounting_mode(self, enabled):
+        if enabled:
+            self.accounting_mode_request.emit()
