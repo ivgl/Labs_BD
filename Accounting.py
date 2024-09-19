@@ -26,7 +26,7 @@ class Model(QSqlQueryModel):
 
     def updateTable(self):
         sql = '''
-            SELECT * FROM suppliers ORDER BY "ID" DESC;
+            SELECT * FROM orders ORDER BY "ID" DESC;
         '''
         self.setQuery(sql)
 

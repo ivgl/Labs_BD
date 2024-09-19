@@ -23,7 +23,9 @@ class MainMenu(QMenuBar):
         self.deleteS = suppliers_menu.addAction('Delete supplier')
 
         orders_menu = self.addMenu("Orders")
-        self.addO = orders_menu.addAction('Add order')
+        self.addreturnO = orders_menu.addAction('Add return order')
+        self.addsupplierO = orders_menu.addAction('Add supplier order')
+        self.addcustomerO = orders_menu.addAction('Add customer order')
 
         accounting_menu = self.addMenu("Accounting")
         self.storageS = accounting_menu.addAction('Storage status')
@@ -60,7 +62,9 @@ class MainMenu(QMenuBar):
         self.deleteS.triggered.connect(widget.delete)
 
     def setMode_Order(self, widget):
-        self.addO.triggered.connect(widget.add)
+        self.addreturnO.triggered.connect(widget.addreturnorder)
+        self.addsupplierO.triggered.connect(widget.addsupplierorder)
+        self.addcustomerO.triggered.connect(widget.addcustomerorder)
 
     def setMode_Accounting(self, widget):
         self.storageS.triggered.connect(widget.storage_status)
